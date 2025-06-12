@@ -1,22 +1,31 @@
 package com.example.mvidecomposetest.presentation
 
+import com.arkivanov.decompose.ComponentContext
 import com.example.mvidecomposetest.data.RepositoryImpl
 import com.example.mvidecomposetest.domain.AddContactUseCase
+import com.example.mvidecomposetest.presentation.AddContactComponent.Model
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class DefaultAddContactComponent : AddContactComponent {
+class DefaultAddContactComponent(
+    componentContext: ComponentContext
+) : AddContactComponent, ComponentContext by componentContext {
 
     val repository = RepositoryImpl
     val addContactsUseCase = AddContactUseCase(repository)
 
+    init {
+        stateKeeper.register(KEY, Model.serializer()){
+            model.value
+        }
+    }
 
     private val _model = MutableStateFlow(
-        AddContactComponent.Model(username = "", phone = "")
+       stateKeeper.consume(KEY, Model.serializer()) ?: Model(username = "", phone = "")
     )
 
-    override val model: StateFlow<AddContactComponent.Model>
+    override val model: StateFlow<Model>
         get() = _model.asStateFlow()
 
     override fun onUsernameChanged(userName: String) {
@@ -30,5 +39,9 @@ class DefaultAddContactComponent : AddContactComponent {
     override fun onSaveContactClicked() {
         val (username, phone) = _model.value
         addContactsUseCase(username, phone)
+    }
+
+    companion object{
+        const val KEY ="DefaultAddContactComponent"
     }
 }
