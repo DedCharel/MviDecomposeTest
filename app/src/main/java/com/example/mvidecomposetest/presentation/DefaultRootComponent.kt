@@ -1,28 +1,39 @@
 package com.example.mvidecomposetest.presentation
 
+import android.os.Parcelable
 import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.router.stack.StackNavigation
+import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.push
+import com.arkivanov.decompose.value.Value
 import com.example.mvidecomposetest.domain.Contact
-import kotlinx.serialization.Serializable
+import kotlinx.parcelize.Parcelize
 
 class DefaultRootComponent(
     componentContext: ComponentContext
 ) : RootComponent, ComponentContext by componentContext{
 
-    val navigate = StackNavigation<Config>()
+    private val navigation = StackNavigation<Config>()
 
-    fun child(
-        componentContext: ComponentContext,
-        config: Config
+    val stack: Value<ChildStack<Config, ComponentContext>> = childStack(
+        source = navigation,
+        initialConfiguration = Config.ContactList,
+        handleBackButton = true,
+        childFactory = ::child,
+    )
+
+    private fun child(
+        config: Config,
+        componentContext: ComponentContext
     ): ComponentContext {
         return when (config){
             Config.AddContact -> {
                 DefaultAddContactComponent(
                     componentContext = componentContext,
                     onContactSaved = {
-                        navigate.pop()
+                        navigation.pop()
                     }
                 )
             }
@@ -30,32 +41,32 @@ class DefaultRootComponent(
                 DefaultContactListComponent(
                     componentContext = componentContext,
                     onEditingContactRequest = {
-                        navigate.push(Config.EditContact(it))
+                        navigation.push(Config.EditContact(it))
                     },
                     onAddContactRequest = {
-                        navigate.push(Config.AddContact)
+                        navigation.push(Config.AddContact)
                     })
             }
             is Config.EditContact -> {
                 DefaultEditContactComponent(
                     componentContext = componentContext,
-                    onContactSaved = {navigate.pop()},
+                    onContactSaved = {navigation.pop()},
                     contact = config.contact
                 )
             }
         }
     }
 
-    @Serializable
-    sealed interface Config{
 
-        @Serializable
+    sealed interface Config: Parcelable{
+
+        @Parcelize
         object ContactList: Config
 
-        @Serializable
+        @Parcelize
         object AddContact: Config
 
-        @Serializable
+        @Parcelize
         data class EditContact(val contact: Contact): Config
     }
 }

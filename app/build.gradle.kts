@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     kotlin("plugin.serialization")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -73,4 +74,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     implementation("com.arkivanov.decompose:decompose:2.2.2")
+    implementation("com.arkivanov.essenty:parcelable:1.3.0")
+    implementation("com.arkivanov.essenty:state-keeper:1.3.0")
 }
