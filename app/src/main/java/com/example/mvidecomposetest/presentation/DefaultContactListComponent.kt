@@ -1,13 +1,18 @@
 package com.example.mvidecomposetest.presentation
 
 import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
+import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import com.example.mvidecomposetest.core.componentScope
 import com.example.mvidecomposetest.data.RepositoryImpl
 import com.example.mvidecomposetest.domain.Contact
 import com.example.mvidecomposetest.domain.GetContactsUseCase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class DefaultContactListComponent(
     componentContext: ComponentContext,
@@ -15,26 +20,33 @@ class DefaultContactListComponent(
     val onAddContactRequest: () -> Unit
 ) : ContactListComponent, ComponentContext by componentContext {
 
-    private val repository = RepositoryImpl
-    private val getContactsUseCase = GetContactsUseCase(repository)
-    private val coroutineScope = componentScope()
+   private lateinit var store: ContactListStore
 
+   init {
+       componentScope().launch {
+           store.labels.collect{
+               when(it){
+                   ContactListStore.Label.AddContact -> {
+                       onAddContactRequest()
+                   }
+                   is ContactListStore.Label.EditContact -> {
+                       onEditingContactRequest(it.contact)
+                   }
+               }
+           }
+       }
+   }
 
-    override val model = getContactsUseCase()
-        .map { ContactListComponent.Model(it) }
-        .stateIn(
-            scope = coroutineScope,
-            started = SharingStarted.Lazily,
-            initialValue = ContactListComponent.Model(listOf())
-        )
-
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val model: StateFlow<ContactListStore.State>
+        get() = store.stateFlow
 
 
     override fun onAddContactClicked() {
-       onAddContactRequest()
+       store.accept(ContactListStore.Intent.AddContact)
     }
 
     override fun onContactClicked(contact: Contact) {
-        onEditingContactRequest(contact)
+        store.accept(ContactListStore.Intent.SelectContact(contact))
     }
 }
