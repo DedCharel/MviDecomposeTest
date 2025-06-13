@@ -1,49 +1,47 @@
 package com.example.mvidecomposetest.presentation
 
 import com.arkivanov.decompose.ComponentContext
-import com.example.mvidecomposetest.data.RepositoryImpl
-import com.example.mvidecomposetest.domain.AddContactUseCase
-import com.example.mvidecomposetest.presentation.AddContactComponent.Model
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.arkivanov.mvikotlin.extensions.coroutines.labels
+import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
+import com.example.mvidecomposetest.core.componentScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class DefaultAddContactComponent(
     componentContext: ComponentContext,
     val onContactSaved: () -> Unit
 ) : AddContactComponent, ComponentContext by componentContext {
 
-    val repository = RepositoryImpl
-    val addContactsUseCase = AddContactUseCase(repository)
+    private lateinit var store: AddContactStore
 
     init {
-        stateKeeper.register(KEY, Model.serializer()){
-            model.value
+        componentScope().launch {
+            store.labels.collect {
+                when (it) {
+                    AddContactStore.Label.ContactSaved -> {
+                        onContactSaved()
+                    }
+                }
+            }
         }
     }
 
-    private val _model = MutableStateFlow(
-       stateKeeper.consume(KEY, Model.serializer()) ?: Model(username = "", phone = "")
-    )
-
-    override val model: StateFlow<Model>
-        get() = _model.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override val model: StateFlow<AddContactStore.State>
+        get() = store.stateFlow
 
     override fun onUsernameChanged(userName: String) {
-        _model.value = _model.value.copy(username = userName)
+        store.accept(AddContactStore.Intent.ChangeUsername(userName))
     }
 
     override fun onPhoneChanged(phone: String) {
-        _model.value = _model.value.copy(phone = phone)
+        store.accept(AddContactStore.Intent.ChangePhone(phone))
     }
 
     override fun onSaveContactClicked() {
-        val (username, phone) = _model.value
-        addContactsUseCase(username, phone)
-        onContactSaved()
+       store.accept(AddContactStore.Intent.SaveContact)
     }
 
-    companion object{
-        const val KEY ="DefaultAddContactComponent"
-    }
+
 }

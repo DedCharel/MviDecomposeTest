@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 interface AddContactComponent {
 
-    val model: StateFlow<Model>
+    val model: StateFlow<AddContactStore.State>
 
     fun onUsernameChanged(userName: String)
 
@@ -13,9 +13,4 @@ interface AddContactComponent {
 
     fun onSaveContactClicked()
 
-    @Serializable
-    data class Model(
-        val username: String,
-        val phone: String
-    )
 }
