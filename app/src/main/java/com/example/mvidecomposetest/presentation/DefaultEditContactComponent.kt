@@ -42,7 +42,7 @@ class DefaultEditContactComponent(
         _model.value = _model.value.copy(phone = phone)
     }
 
-    override fun onSaveContactClick() {
+    override fun onSaveContactClicked() {
         val (username, phone) = _model.value
         editContactsUseCase(contact.copy(username = username, phone = phone))
         onContactSaved()

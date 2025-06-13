@@ -12,7 +12,7 @@ interface EditContactComponent {
 
     fun onPhoneChanged(phone: String)
 
-    fun onSaveContactClick()
+    fun onSaveContactClicked()
 
     @Serializable
     data class Model(
