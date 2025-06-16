@@ -1,6 +1,7 @@
 package com.example.mvidecomposetest.presentation
 
 import com.arkivanov.decompose.ComponentContext
+import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.extensions.coroutines.labels
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
 import com.example.mvidecomposetest.core.componentScope
@@ -20,22 +21,27 @@ class DefaultContactListComponent(
     val onAddContactRequest: () -> Unit
 ) : ContactListComponent, ComponentContext by componentContext {
 
-   private lateinit var store: ContactListStore
 
-   init {
-       componentScope().launch {
-           store.labels.collect{
-               when(it){
-                   ContactListStore.Label.AddContact -> {
-                       onAddContactRequest()
-                   }
-                   is ContactListStore.Label.EditContact -> {
-                       onEditingContactRequest(it.contact)
-                   }
-               }
-           }
-       }
-   }
+    private val store: ContactListStore = instanceKeeper.getStore {
+        val storeFactory = ContactListStoreFactory()
+        storeFactory.create()
+    }
+
+    init {
+        componentScope().launch {
+            store.labels.collect {
+                when (it) {
+                    ContactListStore.Label.AddContact -> {
+                        onAddContactRequest()
+                    }
+
+                    is ContactListStore.Label.EditContact -> {
+                        onEditingContactRequest(it.contact)
+                    }
+                }
+            }
+        }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val model: StateFlow<ContactListStore.State>
@@ -43,7 +49,7 @@ class DefaultContactListComponent(
 
 
     override fun onAddContactClicked() {
-       store.accept(ContactListStore.Intent.AddContact)
+        store.accept(ContactListStore.Intent.AddContact)
     }
 
     override fun onContactClicked(contact: Contact) {
